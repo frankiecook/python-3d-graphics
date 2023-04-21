@@ -1,8 +1,8 @@
 # python-3d-graphics
  3D environment in python that includes the Phong Illumination Model, Flat Shading, Gouraud shading, and Phong shading. Following the course laid out by Dr. Mike O'Neill
 
-# Run the main.py as is #
-When the canvas launches you are able swap between render methods by pressing keys 1-6
+# Run main.py #
+When the canvas launches you will be able to swap between render methods by pressing keys 1-6
 Key 1: Wireframe
 Key 2: Fill + Wireframe
 Key 3: Fill
