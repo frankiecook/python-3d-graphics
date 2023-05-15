@@ -6,6 +6,7 @@ import math
 from myMath import *
 from myGeometry import *
 from myIlluminationModels import *
+from myVariables import *
 
 # ***************************** Shape Class *************************** #
 class shape:
@@ -21,13 +22,11 @@ class shape:
         self.t = 0
         self.intersectionPoint = vector3(0,0,0)
 
-        self.phongIntensity = 0.5
+        self.phongIntensityWeight = 0.8
         self.localWeight = 0.5
         self.reflectWeight = 0
-        self.refractWeight = 0.6
-        self.specIndex = 0.7
-        self.reflect = 1
-        self.refract = 0
+        self.refractWeight = 0
+        self.specIndex = 0.5
         self.density = 2
         
         self.Ks = [0.5,0.5,0.5]
@@ -35,8 +34,10 @@ class shape:
         self.Ip = [0.5,0.5,0.5]
         self.Kd = [0.5,0.5,0.5]
 
+        self.model = phongIlluminationModel("test phong")
+
     def setup(self,x=0,y=0,z=0,size=1):
-        pass
+        self.model.addLightSource([1,1,-1])
 
     def update(self):
         pass
@@ -52,6 +53,89 @@ class shape:
 
         self.update()
 
+    def reflect(self, T, N):
+        # variables
+        radians90 = math.pi / 2
+        R = vector3(0,0,0)
+        
+        # R = N + T / (2*NdotT)
+        # denominator
+        Tminus = T.toCopy()
+        Tminus.scale(-1)
+        denominator = 2 * (N.dotV(Tminus))
+
+        # calculate R
+        # case 1: traced ray parallel to normal vector
+        if (denominator == 0):
+            R = N.toCopy()
+        # case 2: traced ray perpendicular to normal
+        elif (denominator == 2*radians90):
+            R = T.toCopy()
+        # case 2: traced ray 
+        elif (denominator < 2*radians90):
+            R = N.toCopy()
+            Tscale = T.toCopy()
+            Tscale.scale(1/denominator)
+            R.addV(Tscale)
+        else:
+            print("ERROR: ANGLE GREATER THAN 90 DEGREES")
+
+        # normalize reflection vector
+        R.normalize()
+
+        return R
+
+    def refract(self, d1, d2, T, N):
+        # density
+        density = d2 / d1
+
+        # cos1: part of calculation
+        Tminus = T.toCopy()
+        Tminus.scale(-1)
+        cos1 = Tminus.dotV(N)
+        
+        # cos2: part of calculation
+        cos2 = math.sqrt(1 - (1/(density*density)) * (1-(cos1*cos1)))
+
+        # transmitted ray
+        Tscale = T.toCopy()
+        Tscale.scale(1/density)
+
+        # normal vector
+        Nscale = N.toCopy()
+        Nscale.scale(cos2 - (1/density) * cos1)
+
+        # transmitted ray
+        trans = Tscale.toCopy()
+        trans.subV(Nscale)
+        trans.normalize()
+
+        return trans
+
+    def phongIntensity(self, N, L):
+
+        # Ambient Light in Scene
+        # Ia : incoming light source Intensity
+        # Kd : objects diffuse reflectivity
+        ambientRGB = self.model.ambient(self.Ia, self.Kd)
+
+        # Diffuse Light in on Polygon
+        # Ip : the point source intensity
+        # cos(theta)
+        # Kd : diffuse reflectivity of object
+        diffuseRGB = self.model.diffuse(N, self.Ip, self.Kd)
+        
+        # Specular Light on Polygon
+        # Ip : Point source light intensity
+        # Ks : diffuse constant?
+        # R : Reflection Vector
+        # V : View Vector
+        specularRGB = self.model.specular(N, self.Ip, self.Ks)
+
+        # generate color and fill polygon
+        intensity = ambientRGB[0] + diffuseRGB[0] + specularRGB[0]
+        return intensity
+
 # ***************************** Sphere Class *************************** #
 class sphere(shape):
 
@@ -60,7 +144,6 @@ class sphere(shape):
         shape.__init__(self, name)
         self.centerPoint = vector3(0, 0, 0)
         self.radius = 100
-        
         self.localColor = [0.1,0.9,0.5]
 
     # ray is normalized
@@ -102,7 +185,7 @@ class sphere(shape):
         # no intersection
         if (discriminant < 0):# or 2*a==0:
             return False
-        elif (2*a ==0):
+        elif (2*a == 0):
             self.t = 9999999999
         # one intersection
         elif (discriminant == 0):
@@ -119,6 +202,14 @@ class sphere(shape):
                 self.t = t2
             else:
                 self.t = t1
+
+        # check that intersection is not behind ray start
+        if t1<0 and t2<0:
+            return False
+        elif t1<0:
+            self.t=t2
+        elif t2<0:
+            self.t=t1
             
         # calculate intersection point
         # X = X1 + i*t
@@ -131,132 +222,54 @@ class sphere(shape):
         return True
 
     # modified equation for reflecting a traced ray for incident angles
-    def reflectF(self):
+    def reflect(self, startPoint):
         # variables
         intPoint = self.intersectionPoint.toCopy()
-        camera = vector3(0,0,-500)
-        radians90 = math.pi / 2
-        
-        # reflection vector
-        R = vector3(0,0,0)
     
-        # replace L, light, vector with -T, traced ray
-        # T = intersection point - camera position
+        #  vector
         T = intPoint.toCopy()
-        T.subV(camera)
+        T.subV(startPoint)
         T.normalize()
-
+        
         # normal to surface
         N = intPoint.toCopy()
         N.subV(self.centerPoint)
         N.normalize()
-        
-        # R = N + T / (2*NdotT)
-        # denominator
-        Tminus = T.toCopy()
-        Tminus.scale(-1)
-        denominator = 2 * (N.dotV(Tminus))
 
-        # calculate R
-        # case 1: traced ray perpendicular to normal vector
-        # 90 degree angle, so R = T
-        if (denominator == 0):
-            R = T.toCopy()
-            pass
-        # case 2: light source is below surface
-        elif (denominator < 2*radians90):
-            R = N.toCopy()
-            Tscale = T.toCopy()
-            Tscale.scale(1/denominator)
-            R.addV(Tscale)
-        else:
-            print("ANGLE GREATER THAN 90 DEGREES")
+        return shape.reflect(self,T,N)
 
-        # normalize reflection vector
-        R.normalize()
 
-        return R
-
-    def refractF(self):
+    def refract(self, startPoint):
         # variables
         intPoint = self.intersectionPoint.toCopy()
-        camera = vector3(0,0,-500)
         radians90 = math.pi / 2
         d1 = 1
         d2 = self.density
         
         # traced ray T
-        # T = intersection point - camera position
         T = intPoint.toCopy()
-        T.subV(camera)
-        #T = vector3(0.7,-0.7,0)
+        T.subV(startPoint)
         T.normalize()
 
         # normal to surface
         N = intPoint.toCopy()
         N.subV(self.centerPoint)
-        #N = vector3(0,1,0)
         N.normalize()
 
-        # d
-        d = d2 / d1
+        return shape.refract(self,d1,d2,T,N)
 
-        # cos1
-        Tminus = T.toCopy()
-        Tminus.scale(-1)
-        cos1 = Tminus.dotV(N)
-        
-        # cos2
-        cos2 = math.sqrt(1 - (1/(d*d)) * (1-(cos1*cos1)))
-
-        # transmitted ray
-        Tscale = T.toCopy()
-        Tscale.scale(1/d)
-        Nscale = N.toCopy()
-        Nscale.scale(cos2 - (1/d) * cos1)
-        
-        trans = Tscale.toCopy()
-        trans.subV(Nscale)
-        
-        trans.normalize()
-
-        return trans
-
-    def phongIntensityF(self):
+    def phongIntensity(self):
         intPoint = self.intersectionPoint.toCopy()
-        model = phongIlluminationModel("test phong")
-        model.addLightSource([1,1,-1])
         
         # normal to surface
         N = intPoint.toCopy()
         N.subV(self.centerPoint)
         N.normalize()
 
-        # Ambient Light in Scene
-        # Ia : incoming light source Intensity
-        # Kd : objects diffuse reflectivity
-        ambientRGB = model.ambient(self.Ia, self.Kd)
+        # light source
+        L = vector3(1,1,-1)
 
-        # Diffuse Light in on Polygon
-        # Ip : the point source intensity
-        # cos(theta)
-        # Kd : diffuse reflectivity of object
-        diffuseRGB = model.diffuse(N, self.Ip, self.Kd)
-        if diffuseRGB != [0,0,0]:
-            #print(diffuseRGB)
-            pass
-        
-        # Specular Light on Polygon
-        # Ip : Point source light intensity
-        # Ks : diffuse constant?
-        # R : Reflection Vector
-        # V : View Vector
-        specularRGB = model.specular(N, self.Ip, self.Ks)
-
-        # generate color and fill polygon
-        #color = model.triColorHexCode(ambientRGB[0],diffuseRGB[0],specularRGB[0])
-        intensity = ambientRGB[0] + diffuseRGB[0] + specularRGB[0]
-        return intensity
+        return shape.phongIntensity(self,N,L)
         
 
 # ***************************** Plane Class *************************** #
@@ -304,12 +317,10 @@ class plane(shape):
 
         # ray is parallel to plane
         if denominator == 0:
-            #print("DENOMINATOR == 0: "+str(denominator))
             return False
         # ray is not visible, but intersects
         #elif denominator < 0:
-            #print("DENOMINATOR < 0: "+str(denominator))
-            #return False
+        #    return False
 
         # calculate t
         D = A*a + B*b + C*c
@@ -336,7 +347,8 @@ class plane(shape):
         if (Z > 3000 or Z < -300) or (X > 1000 or X < -1000):# and abs(X) > 300:
             #print(Z)
             return False
-        
+
+        # set color of checkerboard pattern
         if abs(X) % 200 > 100:
             colorFlag = not colorFlag
         if abs(Z) % 200 > 100:
@@ -349,93 +361,38 @@ class plane(shape):
             
         return True
 
-    def phongIntensityF(self):
-        intPoint = self.intersectionPoint.toCopy()
-        model = phongIlluminationModel("test phong")
-        model.addLightSource([1,1,-1])
-        
+    def phongIntensity(self):
         # normal to surface
         N = self.surfaceNormal.toCopy()
         N.normalize()
 
-        # Ambient Light in Scene
-        # Ia : incoming light source Intensity
-        # Kd : objects diffuse reflectivity
-        ambientRGB = model.ambient(self.Ia, self.Kd)
-
-        # Diffuse Light in on Polygon
-        # Ip : the point source intensity
-        # cos(theta)
-        # Kd : diffuse reflectivity of object
-        diffuseRGB = model.diffuse(N, self.Ip, self.Kd)
-        if diffuseRGB != [0,0,0]:
-            #print(diffuseRGB)
-            pass
+        # light vector
+        L = vector3(500,500,0)
         
-        # Specular Light on Polygon
-        # Ip : Point source light intensity
-        # Ks : diffuse constant?
-        # R : Reflection Vector
-        # V : View Vector
-        specularRGB = model.specular(N, self.Ip, self.Ks)
-
-        # generate color and fill polygon
-        #color = model.triColorHexCode(ambientRGB[0],diffuseRGB[0],specularRGB[0])
-        intensity = ambientRGB[0] + diffuseRGB[0] + specularRGB[0]
-        return intensity
+        return shape.phongIntensity(self, N, L)
 
     # modified equation for reflecting a traced ray for incident angles
-    def reflectF(self):
+    def reflect(self, startPoint):
         # variables
         intPoint = self.intersectionPoint.toCopy()
-        camera = vector3(0,0,-500)
-        radians90 = math.pi / 2
         
         # reflection vector
         R = vector3(0,0,0)
     
         #  vector
         T = intPoint.toCopy()
-        T.subV(camera)
+        T.subV(startPoint)
         T.normalize()
 
         # normal to surface
         N = self.surfaceNormal.toCopy()
         N.normalize()
-        
-        # R = N + T / (2*NdotT)
-        # denominator
-        Tminus = T.toCopy()
-        Tminus.scale(-1)
-        denominator = 2 * (N.dotV(Tminus))
 
-        # calculate R
-        # case 1: traced ray perpendicular to normal vector
-        # 90 degree angle, so R = T
-        if (denominator == 0):
-            print("ZERO DENOMINATOR")
-            R = T.toCopy()
-            pass
-        # case 2: light source is below surface
-        elif (denominator < 2*radians90):
-            #print("AVERAGE D")
-            R = N.toCopy()
-            Tscale = T.toCopy()
-            Tscale.scale(1/denominator)
-            R.addV(Tscale)
-        else:
-            print("ANGLE GREATER THAN 90 DEGREES")
-
-        # normalize reflection vector
-        R.normalize()
-        
-        return R
-
+        return shape.reflect(self,T,N)
+    
     # assume vectors T and N are unit vectors
-    def refractF(self):
-        # check if object is translucent
-        if (self.refract == 0):
-            return vector3(0,0,0)
+    def refract(self):
+        return vector3(0,0,0)
 
         
 

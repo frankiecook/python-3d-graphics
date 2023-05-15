@@ -14,25 +14,71 @@ from tkinter import *
 
 # ************************ Initialize Shape Objects ********************* #
 redSphere = sphere("Red Sphere")
-redSphere.centerPoint = vector3(100,-90,-100)
-redSphere.radius = 85
+redSphere.radius = 65
+redSphere.setup()
+redSphere.centerPoint = vector3(80,-175+redSphere.radius,-100)
 redSphere.localColor = [0.9,0.1,0.9]
-redSphere.reflectWeight = 0
+redSphere.reflectWeight = 0.5
 redSphere.refractWeight = 0
-redSphere.localWeight = 0.5
+redSphere.localWeight = 0.8
 objects.append(redSphere)
 
+blueSphere = sphere("Blue Sphere")
+blueSphere.radius = 120
+blueSphere.setup()
+blueSphere.centerPoint = vector3(-250,-175+blueSphere.radius,300)
+blueSphere.localColor = [0.4,0.4,0.9]
+blueSphere.reflectWeight = 0.5
+blueSphere.refractWeight = 0
+blueSphere.localWeight = 0.8
+objects.append(blueSphere)
+
 greenSphere = sphere("Green Sphere")
-greenSphere.centerPoint = vector3(-100,-100,150)
-greenSphere.radius = 75
+greenSphere.radius = 200
+greenSphere.setup()
+greenSphere.centerPoint = vector3(300,-175+greenSphere.radius,400)
 greenSphere.localColor = [0.1,0.9,0.5]
-greenSphere.reflectWeight = 0
-greenSphere.refractWeight = 0.5
-greenSphere.localWeight = 0.5
+greenSphere.reflectWeight = 0.5
+greenSphere.refractWeight = 0
+greenSphere.localWeight = 0.8
 objects.append(greenSphere)
 
+whiteSphere = sphere("White Sphere")
+whiteSphere.radius = 65
+whiteSphere.density = 2
+whiteSphere.setup()
+whiteSphere.centerPoint = vector3(-70,-175+whiteSphere.radius,0)
+whiteSphere.localColor = [0.6,0.6,0.6]
+whiteSphere.reflectWeight = 0
+whiteSphere.refractWeight = 0.7
+whiteSphere.localWeight = 0.2
+objects.append(whiteSphere)
+
+t1Sphere = sphere("t1 Sphere")
+t1Sphere.radius = 50
+t1Sphere.density= 2
+t1Sphere.setup()
+t1Sphere.centerPoint = vector3(0,-175+t1Sphere.radius,350)
+t1Sphere.localColor = [0.6,0.6,0.6]
+t1Sphere.reflectWeight = 0
+t1Sphere.refractWeight = 0.7
+t1Sphere.localWeight = 0.2
+objects.append(t1Sphere)
+
+t2Sphere = sphere("t2 Sphere")
+t2Sphere.radius = 30
+t2Sphere.density = 1
+t2Sphere.setup()
+t2Sphere.centerPoint = t1Sphere.centerPoint
+t2Sphere.localColor = [0.6,0.6,0.6]
+t2Sphere.reflectWeight = 0
+t2Sphere.refractWeight = 0.7
+t2Sphere.localWeight = 0.2
+objects.append(t2Sphere)
+
 checkerBoard = plane("checkerboard")
-checkerBoard.reflectWeight = 0.2
+checkerBoard.setup()
+checkerBoard.reflectWeight = 0
 checkerBoard.refractWeight = 0
 checkerBoard.localWeight = 0.9
 objects.append(checkerBoard)

@@ -5,7 +5,7 @@
 # ****** variables ****** #
 CanvasWidth = 500
 CanvasHeight = 500
-d = 500
+d = -500
 objects = []
 curObject = 0
 curPointCloud = 0

@@ -227,6 +227,10 @@ class vector3:
         vector.normalize()
         return vector.toCopy()
 
+    # compare two 3d vectors
+    def compare(self, vector):
+        return self.x == vector.x and self.y == vector.y and self.z == vector.z
+
 
 
 
