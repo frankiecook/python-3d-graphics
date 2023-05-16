@@ -39,7 +39,7 @@ class phongIlluminationModel:
     # Ip : the point source intensity
     # Kd : diffuse reflectivity of object
     # d : distnace between object and light source (constant of 1)
-    def diffuse(self, N, Ip, Kd, d=1):
+    def diffuse(self, N, Ip, Kd, d=1, intersectionPoint = "__NONE__"):
         diffuseR = 0
         diffuseG = 0
         diffuseB = 0
@@ -51,12 +51,16 @@ class phongIlluminationModel:
         for L in self.lightSources:
 
             # light source vector
-            L = vector3(L[0], L[1], L[2])
-            L.normalize()
-            
-            diffuseR += Ip[0] * Kd[0] * (N.dotV(L)) / d
-            diffuseG += Ip[1] * Kd[1] * (N.dotV(L)) / d
-            diffuseB += Ip[2] * Kd[2] * (N.dotV(L)) / d
+            vectorL = vector3(L[0], L[1], L[2])
+            vectorL.normalize()
+
+            # exception for planes
+            if L[0] == 500:
+                vectorL = vector3.computeUnitVector(intersectionPoint, vectorL)
+
+            diffuseR += Ip[0] * Kd[0] * (N.dotV(vectorL)) / d
+            diffuseG += Ip[1] * Kd[1] * (N.dotV(vectorL)) / d
+            diffuseB += Ip[2] * Kd[2] * (N.dotV(vectorL)) / d
 
         diffuseRGB = [diffuseR, diffuseG, diffuseB]
         return diffuseRGB
@@ -67,7 +71,7 @@ class phongIlluminationModel:
     # Ks : diffuse constant?
     # R : Reflection Vector
     # V : View Vector
-    def specular(self, N, Ip, Ks):
+    def specular(self, N, Ip, Ks, intersectionPoint):
         # default
         specularR = 0
         specularG = 0
@@ -83,27 +87,30 @@ class phongIlluminationModel:
             # reflection vector
             R = []
         
-            # light source vector
-            
-            L = vector3(L[0], L[1], L[2])
-            L.normalize()
+            # light source vector    
+            vectorL = vector3(L[0], L[1], L[2])
+            vectorL.normalize()
+
+            # exception for planes
+            if L[0] == 500:
+                vectorL = vector3.computeUnitVector(intersectionPoint, vectorL)
             
             # angle between N and L
-            twoCosPhi = 2 * (N.dotV(L))
+            twoCosPhi = 2 * (N.dotV(vectorL))
             
             # calculate R
             # case 1: light source above surface
             if (twoCosPhi > 0):
                 for i in range(3):
-                    R.append(N.index(i) - (L.index(i) / twoCosPhi))
+                    R.append(N.index(i) - (vectorL.index(i) / twoCosPhi))
             # case 2: light source parallel to surface
             elif (twoCosPhi == 0):
                 for i in range(3):
-                    R.append(-L.index(i))
+                    R.append(-vectorL.index(i))
             # case 3: light source is below surface
             else:# (twoCosPhi < 0):
                 for i in range(3):
-                    R.append(-N.index(i) + (L.index(i) / twoCosPhi))
+                    R.append(-N.index(i) + (vectorL.index(i) / twoCosPhi))
 
             # cycle
             Rbefore = vector3(R[0], R[1], R[2])

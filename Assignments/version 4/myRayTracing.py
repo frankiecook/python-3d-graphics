@@ -15,6 +15,7 @@ def traceRay(startPoint, ray, depth, curObjectName="__NONE__"):
         #print("REDSPHERE")
         #print(ray.toArray())
         pass
+    
     secondPoint = ray.toCopy()
     secondPoint.addV(startPoint)
     if curObjectName=="Red Sphere":
@@ -30,27 +31,12 @@ def traceRay(startPoint, ray, depth, curObjectName="__NONE__"):
     for object in objects:
         # do not check for collision with the object reflected off of
         if object.name == curObjectName:
-            # do nothing
-         #   if object.refractWeight != 0:
-           #     if object.intersect(startPoint, secondPoint):
-          #          if object.t < tMin:
-            #            tMin = object.t
-             #           nearestObject = object
             pass
         
         elif object.intersect(startPoint, secondPoint):
             if object.t < tMin:
                 tMin = object.t
                 nearestObject = object
-
-                #if True:#nearestObjectHolder.intersectionPoint.compare(startPoint,depth):
-                    # decide if refraction or reflection
-                    # is refraction
-                    #pass
-
-                #else:
-                    #tMin = object.t
-                    #nearestObject = object
                     
 
     # return skyColor if no intersection
@@ -110,11 +96,9 @@ def traceRay(startPoint, ray, depth, curObjectName="__NONE__"):
         returnColor[i] = localColor[i]*localWeight + reflectColor[i]*reflectWeight + refractColor[i]*refractWeight  
         # check if outside range
         if (returnColor[i] > 1):
-            #print("COLOR INPUT OUTSIDE RANGE (>1): "+str(returnColor[i]))
             returnColor[i] = 1
 
         if (returnColor[i] < 0):
-            #print("COLOR INPUT OUTSIDE RANGE (<0): "+str(returnColor[i]))
             returnColor[i] = 0
 
     return returnColor
@@ -141,21 +125,14 @@ def renderImage(L, c, canvasHeight, canvasWidth):
             ray = vector3.computeUnitVector(centerOfProjection, screenPoint)
 
             # recursively compute color
-            color = traceRay(centerOfProjection, ray, 8)
+            color = traceRay(centerOfProjection, ray, 10)
             c.w.create_line(right+x, top-y, right+x+1, top-y, fill=model.triColorHexCode(color[0],color[1],color[2]))
-
-    #x=0
-    #y=-200
-    #point = vector3(x,y,0)
-    #centerOfProjection = vector3(0,0,-d)
-    #ray = vector3.computeUnitVector(centerOfProjection, point)
-    #color = traceRay(centerOfProjection, ray, 1, objects, point)
-    #c.w.create_line(right+x, top-y, right+x+1, top-y, fill=model.triColorHexCode(color[0],color[1],color[2]))
 
     overSat = illuminationSaturationCounter / (canvasWidth * canvasHeight) * 100
     print(illuminationSaturationCounter, " pixel color values were oversaturated: ", overSat, "%.")
 
 # shadow detection
+# shadow feeler ray cast from startPoint on object to each light source
 def inShadow(nearestObject, intersectionPoint):
     # variables
     L = vector3(1,1,-1)

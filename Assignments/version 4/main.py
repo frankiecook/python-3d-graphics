@@ -78,9 +78,9 @@ objects.append(t2Sphere)
 
 checkerBoard = plane("checkerboard")
 checkerBoard.setup()
-checkerBoard.reflectWeight = 0
+checkerBoard.reflectWeight = 0.2
 checkerBoard.refractWeight = 0
-checkerBoard.localWeight = 0.9
+checkerBoard.localWeight = 0.8
 objects.append(checkerBoard)
 # ************** #
 

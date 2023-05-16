@@ -26,7 +26,7 @@ class shape:
         self.localWeight = 0.5
         self.reflectWeight = 0
         self.refractWeight = 0
-        self.specIndex = 0.5
+        self.specIndex = 1
         self.density = 2
         
         self.Ks = [0.5,0.5,0.5]
@@ -123,14 +123,14 @@ class shape:
         # Ip : the point source intensity
         # cos(theta)
         # Kd : diffuse reflectivity of object
-        diffuseRGB = self.model.diffuse(N, self.Ip, self.Kd)
+        diffuseRGB = self.model.diffuse(N, self.Ip, self.Kd, 1, self.intersectionPoint)
         
         # Specular Light on Polygon
         # Ip : Point source light intensity
         # Ks : diffuse constant?
         # R : Reflection Vector
         # V : View Vector
-        specularRGB = self.model.specular(N, self.Ip, self.Ks)
+        specularRGB = self.model.specular(N, self.Ip, self.Ks, self.intersectionPoint)
 
         # generate color and fill polygon
         intensity = ambientRGB[0] + diffuseRGB[0] + specularRGB[0]
@@ -362,6 +362,8 @@ class plane(shape):
         return True
 
     def phongIntensity(self):
+        self.model.lightSources[0] = [500,500,0]
+                
         # normal to surface
         N = self.surfaceNormal.toCopy()
         N.normalize()
